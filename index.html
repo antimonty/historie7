@@ -65,6 +65,7 @@
       padding: 12px;
       border-radius: 8px;
       border-left: 4px solid var(--sub-accent);
+      display: none;
     }
     .btn-sub {
       background: #ffffff;
@@ -118,127 +119,114 @@
 <div class="container">
   <header>
     <h1>Kulturfag 7. Klasse: Grundbog</h1>
-    
-    <!-- 1. Hovedtemaer -->
     <div class="nav-themes" id="theme-buttons"></div>
-    
-    <!-- 2. Underkapitler for det valgte tema -->
     <div class="nav-subchapters" id="subchapter-buttons">
       <span style="font-size: 0.85rem; color: #64748b; margin-right: 8px;">Kapitler:</span>
     </div>
   </header>
 
   <main id="reader-content">
-    <div class="status-msg">Vælg et emne ovenfor for at åbne kapitlerne...</div>
+    <div class="status-msg">Vælg et emne ovenfor for at indlæse bogen...</div>
   </main>
 </div>
 
 <script>
-  // Komplet kapitelstruktur for 7. klasse
-  const bogStruktur = [
-    {
-      titel: "Balladen med svenskerne",
-      kapitler: [
-        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708" },
-        { navn: "Slaget i Køge Bugt", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708/1714" },
-        { navn: "Niels Juel & Tordenskjold", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708/1715" },
-        { navn: "Svenskekrigene", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708/1716" }
-      ]
-    },
-    {
-      titel: "Nye tanker & videnskab",
-      kapitler: [
-        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709" },
-        { navn: "Oplysningstiden", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709/1717" },
-        { navn: "Videnskab & Opdagelser", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709/1718" }
-      ]
-    },
-    {
-      titel: "Kampen om Europa",
-      kapitler: [
-        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710" },
-        { navn: "Europas magtbalance", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710/1719" },
-        { navn: "Alliancer & Krige", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710/1720" }
-      ]
-    },
-    {
-      titel: "Revolutioner",
-      kapitler: [
-        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711" },
-        { navn: "Den Franske Revolution", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711/1721" },
-        { navn: "Menneskerettigheder", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711/1722" }
-      ]
-    },
-    {
-      titel: "Napoleon",
-      kapitler: [
-        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712" },
-        { navn: "Fra general til kejser", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712/1723" },
-        { navn: "Slaget ved Waterloo", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712/1724" }
-      ]
-    },
-    {
-      titel: "Danmark & Napoleon",
-      kapitler: [
-        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713" },
-        { navn: "Slaget på Reden (1801)", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713/1725" },
-        { navn: "Københavns Bombardement (1807)", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713/1726" },
-        { navn: "Statsbankerot & Tabet af Norge (1814)", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713/1727" }
-      ]
-    }
+  const temaer = [
+    { titel: "Balladen med svenskerne", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708" },
+    { titel: "Nye tanker & videnskab", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709" },
+    { titel: "Kampen om Europa", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710" },
+    { titel: "Revolutioner", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711" },
+    { titel: "Napoleon", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712" },
+    { titel: "Danmark & Napoleon", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713" }
   ];
 
-  // Opbyg Hovedtema-knapper
+  // Robust hentning med proxy-fallback
+  async function fetchWithFallback(targetUrl) {
+    const proxies = [
+      (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+      (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+      (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`
+    ];
+
+    for (const proxyGen of proxies) {
+      try {
+        const res = await fetch(proxyGen(targetUrl));
+        if (res.ok) {
+          const text = await res.text();
+          if (text && text.length > 200) return text;
+        }
+      } catch (err) {
+        // Prøv næste proxy
+      }
+    }
+    throw new Error('Kunne ikke hente siden via proxyservere');
+  }
+
+  // Generer hovedknapper
   const themeContainer = document.getElementById('theme-buttons');
-  bogStruktur.forEach((tema, index) => {
+  temaer.forEach((tema, idx) => {
     const btn = document.createElement('button');
     btn.className = 'btn-theme';
     btn.innerText = tema.titel;
-    btn.onclick = () => vaelgTema(index, btn);
+    btn.onclick = () => vaelgTema(idx, btn);
     themeContainer.appendChild(btn);
   });
 
-  function vaelgTema(temaIndex, temaBtn) {
+  async function vaelgTema(idx, btn) {
     document.querySelectorAll('.btn-theme').forEach(b => b.classList.remove('active'));
-    if (temaBtn) temaBtn.classList.add('active');
+    if (btn) btn.classList.add('active');
 
     const subContainer = document.getElementById('subchapter-buttons');
+    subContainer.style.display = 'flex';
     subContainer.innerHTML = '<span style="font-size: 0.85rem; color: #64748b; margin-right: 8px;">Kapitler:</span>';
 
-    const tema = bogStruktur[temaIndex];
-    tema.kapitler.forEach((kapitel, kIndex) => {
-      const subBtn = document.createElement('button');
-      subBtn.className = 'btn-sub';
-      subBtn.innerText = kapitel.navn;
-      subBtn.onclick = () => {
-        document.querySelectorAll('.btn-sub').forEach(b => b.classList.remove('active'));
-        subBtn.classList.add('active');
-        hentKapitelTekst(kapitel.url);
-      };
-      subContainer.appendChild(subBtn);
-      
-      // Åbn første kapitel automatisk
-      if (kIndex === 0) {
-        subBtn.classList.add('active');
-        hentKapitelTekst(kapitel.url);
-      }
-    });
+    const tema = temaer[idx];
+    await hentOgVisIndhold(tema.url, true);
   }
 
-  async function hentKapitelTekst(targetUrl) {
+  async function hentOgVisIndhold(targetUrl, opbygUnderkapitler = false) {
     const readerDiv = document.getElementById('reader-content');
     readerDiv.innerHTML = '<div class="status-msg">Henter og klargør læsetilstand...</div>';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-      if (!res.ok) throw new Error('Kunne ikke nå serveren');
-      const htmlText = await res.text();
-      
+      const htmlText = await fetchWithFallback(targetUrl);
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlText, 'text/html');
 
-      // Gør alle billeder absolutte
+      // Find og opbyg underkapitler direkte fra portalens egen menu
+      if (opbygUnderkapitler) {
+        const subContainer = document.getElementById('subchapter-buttons');
+        const menuLinks = doc.querySelectorAll('#leftmenu a, .leftmenu a, .nav a, #menu a, .sidebar a, a[href*="lange-linjer"]');
+        const fundneKapitler = [];
+
+        menuLinks.forEach(a => {
+          let href = a.getAttribute('href');
+          let text = a.textContent.trim();
+          if (href && text && text.length > 2 && !fundneKapitler.some(k => k.url === href)) {
+            if (!href.startsWith('http')) {
+              href = 'https://historie.meloni.dk/' + href.replace(/^\//, '');
+            }
+            fundneKapitler.push({ navn: text, url: href });
+          }
+        });
+
+        if (fundneKapitler.length > 0) {
+          fundneKapitler.forEach((kap, kIdx) => {
+            const subBtn = document.createElement('button');
+            subBtn.className = 'btn-sub' + (kIdx === 0 ? ' active' : '');
+            subBtn.innerText = kap.navn;
+            subBtn.onclick = () => {
+              document.querySelectorAll('.btn-sub').forEach(b => b.classList.remove('active'));
+              subBtn.classList.add('active');
+              hentOgVisIndhold(kap.url, false);
+            };
+            subContainer.appendChild(subBtn);
+          });
+        }
+      }
+
+      // Gør billeder absolutte
       doc.querySelectorAll('img').forEach(img => {
         const src = img.getAttribute('src');
         if (src && !src.startsWith('http')) {
@@ -246,10 +234,10 @@
         }
       });
 
-      // Fjern unødvendige portalelementer
-      doc.querySelectorAll('header, footer, nav, script, style, noscript, .menu, #menu, .footer').forEach(el => el.remove());
+      // Fjern forstyrrende støj
+      doc.querySelectorAll('header, footer, nav, script, style, noscript, #leftmenu, .leftmenu, #top, .footer').forEach(el => el.remove());
 
-      let mainContent = doc.querySelector('#content, .content, main, article, #main, .main') || doc.body;
+      let mainContent = doc.querySelector('#content, .content, main, article, #main, .main, #tekst, .tekst') || doc.body;
 
       const cleanHTML = DOMPurify.sanitize(mainContent.innerHTML, {
         ADD_TAGS: ['img', 'a'],
@@ -258,7 +246,7 @@
 
       readerDiv.innerHTML = cleanHTML;
 
-      // Kapr interne links
+      // Kapr kildelinks i brødteksten
       readerDiv.querySelectorAll('a').forEach(link => {
         let href = link.getAttribute('href');
         if (href && !href.startsWith('javascript:')) {
@@ -268,7 +256,7 @@
           link.href = '#';
           link.onclick = (e) => {
             e.preventDefault();
-            hentKapitelTekst(href);
+            hentOgVisIndhold(href, false);
           };
         }
       });
@@ -282,7 +270,7 @@
     }
   }
 
-  // Start ved første emne
+  // Start automatisk på første emne
   vaelgTema(0, themeContainer.children[0]);
 </script>
 
