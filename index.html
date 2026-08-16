@@ -22,7 +22,7 @@
       padding: 24px;
     }
     .container {
-      max-width: 900px;
+      max-width: 950px;
       margin: 0 auto;
       background: var(--card);
       padding: 40px;
@@ -71,6 +71,12 @@
     #reader-content p {
       margin-bottom: 20px;
     }
+    #reader-content a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: underline;
+      cursor: pointer;
+    }
     .status-msg {
       padding: 16px;
       border-radius: 8px;
@@ -103,10 +109,13 @@
   async function hentKapitel(btn, targetUrl) {
     const readerDiv = document.getElementById('reader-content');
     
-    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    if (btn) {
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
 
     readerDiv.innerHTML = '<div class="status-msg">Henter og klargør læsetilstand...</div>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
       const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
@@ -116,7 +125,7 @@
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlText, 'text/html');
 
-      // Gør alle relative billed-stier absolutte
+      // Gør alle billed-adresser absolutte
       doc.querySelectorAll('img').forEach(img => {
         const src = img.getAttribute('src');
         if (src && !src.startsWith('http://') && !src.startsWith('https://')) {
@@ -124,19 +133,34 @@
         }
       });
 
-      // Fjern elementer, der forstyrrer (menuer, topbjælker, footere)
+      // Fjern forstyrrende elementer
       doc.querySelectorAll('header, footer, nav, script, style, noscript, .menu, #menu, .footer').forEach(el => el.remove());
 
-      // Find hovedindholdet på siden
+      // Hent hovedindholdet
       let mainContent = doc.querySelector('#content, .content, main, article, #main, .main') || doc.body;
 
-      // Rens med DOMPurify
+      // Rens HTML
       const cleanHTML = DOMPurify.sanitize(mainContent.innerHTML, {
-        ADD_TAGS: ['img'],
-        ADD_ATTR: ['src', 'alt', 'title']
+        ADD_TAGS: ['img', 'a'],
+        ADD_ATTR: ['src', 'alt', 'title', 'href']
       });
 
       readerDiv.innerHTML = cleanHTML;
+
+      // Gør alle links i teksten klikbare direkte inde i læseren
+      readerDiv.querySelectorAll('a').forEach(link => {
+        let href = link.getAttribute('href');
+        if (href && !href.startsWith('javascript:')) {
+          if (!href.startsWith('http')) {
+            href = 'https://historie.meloni.dk/' + href.replace(/^\//, '');
+          }
+          link.href = '#';
+          link.onclick = (e) => {
+            e.preventDefault();
+            hentKapitel(null, href);
+          };
+        }
+      });
 
     } catch (error) {
       readerDiv.innerHTML = `
