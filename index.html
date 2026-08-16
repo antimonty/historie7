@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kulturfag 7. Klasse - Grundbog</title>
-  <!-- Mozilla Readability & DOMPurify -->
-  <script src="https://cdn.jsdelivr.net/npm/@mozilla/readability@0.5.0/Readability.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
   <style>
     :root {
@@ -24,7 +22,7 @@
       padding: 24px;
     }
     .container {
-      max-width: 1000px;
+      max-width: 900px;
       margin: 0 auto;
       background: var(--card);
       padding: 40px;
@@ -58,6 +56,10 @@
       background: var(--accent);
       color: #ffffff;
     }
+    #reader-content {
+      font-size: 1.15rem;
+      color: #1e293b;
+    }
     #reader-content img {
       max-width: 100%;
       height: auto;
@@ -67,9 +69,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     #reader-content p {
-      font-size: 1.15rem;
       margin-bottom: 20px;
-      color: #1e293b;
     }
     .status-msg {
       padding: 16px;
@@ -83,7 +83,7 @@
 
 <div class="container">
   <header>
-    <h1>📖 Kulturfag 7. Klasse: Grundbog</h1>
+    <h1>Kulturfag 7. Klasse: Grundbog</h1>
     <div class="nav-links">
       <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708')">Balladen med svenskerne</button>
       <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709')">Nye tanker & videnskab</button>
@@ -100,37 +100,23 @@
 </div>
 
 <script>
-  async function hentHtml(targetUrl) {
-    // Forsøg 1: corsproxy.io (meget stabil og hurtig)
-    try {
-      const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-      if (res.ok) return await res.text();
-    } catch (e) {
-      console.warn('Primær proxy fejlede, forsøger backup...');
-    }
-
-    // Forsøg 2: allorigins.win (backup)
-    const resBackup = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
-    if (!resBackup.ok) throw new Error('Kunne ikke nå serveren');
-    return await resBackup.text();
-  }
-
   async function hentKapitel(btn, targetUrl) {
     const readerDiv = document.getElementById('reader-content');
     
-    // Aktiv knap-styling
     document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
     readerDiv.innerHTML = '<div class="status-msg">Henter og klargør læsetilstand...</div>';
 
     try {
-      const htmlText = await hentHtml(targetUrl);
+      const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
+      if (!res.ok) throw new Error('Kunne ikke hente siden');
+      const htmlText = await res.text();
       
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlText, 'text/html');
 
-      // Gør alle relative billedadresser absolutte
+      // Gør alle relative billed-stier absolutte
       doc.querySelectorAll('img').forEach(img => {
         const src = img.getAttribute('src');
         if (src && !src.startsWith('http://') && !src.startsWith('https://')) {
@@ -138,24 +124,24 @@
         }
       });
 
-      // Kør Mozilla Readability
-      const reader = new Readability(doc);
-      const article = reader.parse();
+      // Fjern elementer, der forstyrrer (menuer, topbjælker, footere)
+      doc.querySelectorAll('header, footer, nav, script, style, noscript, .menu, #menu, .footer').forEach(el => el.remove());
 
-      if (article && article.content) {
-        readerDiv.innerHTML = `
-          <h2>${article.title || 'Kapitel'}</h2>
-          ${DOMPurify.sanitize(article.content)}
-        `;
-      } else {
-        // Fallback: Vis rå body renset, hvis Readability er for aggressiv
-        readerDiv.innerHTML = DOMPurify.sanitize(doc.body.innerHTML);
-      }
+      // Find hovedindholdet på siden
+      let mainContent = doc.querySelector('#content, .content, main, article, #main, .main') || doc.body;
+
+      // Rens med DOMPurify
+      const cleanHTML = DOMPurify.sanitize(mainContent.innerHTML, {
+        ADD_TAGS: ['img'],
+        ADD_ATTR: ['src', 'alt', 'title']
+      });
+
+      readerDiv.innerHTML = cleanHTML;
+
     } catch (error) {
       readerDiv.innerHTML = `
         <div class="status-msg" style="color: #b91c1c; background: #fee2e2;">
-          <strong>Fejl under indlæsning:</strong> ${error.message}<br><br>
-          <em>Tip:</em> Hvis du tester lokalt fra computeren, skal filen uploades til <strong>GitHub Pages</strong>, før browseren tillader data-hentning.
+          <strong>Fejl under indlæsning:</strong> ${error.message}
         </div>
       `;
     }
