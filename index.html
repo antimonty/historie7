@@ -11,6 +11,7 @@
       --card: #ffffff;
       --text: #0f172a;
       --accent: #b91c1c;
+      --sub-accent: #2563eb;
       --border: #e2e8f0;
     }
     body {
@@ -25,7 +26,7 @@
       max-width: 950px;
       margin: 0 auto;
       background: var(--card);
-      padding: 40px;
+      padding: 36px 40px;
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.06);
     }
@@ -35,30 +36,57 @@
       margin-bottom: 24px;
     }
     h1 { color: var(--accent); margin-top: 0; font-size: 1.8rem; }
-    .nav-links {
+    
+    .nav-themes, .nav-subchapters {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 30px;
+      gap: 8px;
+      margin-bottom: 16px;
     }
-    .btn {
+    
+    .btn-theme {
       background: #e2e8f0;
       color: #1e293b;
-      padding: 10px 16px;
-      border-radius: 8px;
+      padding: 8px 14px;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       cursor: pointer;
       border: none;
       transition: all 0.2s ease;
     }
-    .btn:hover, .btn.active {
+    .btn-theme:hover, .btn-theme.active {
       background: var(--accent);
       color: #ffffff;
     }
+    
+    .nav-subchapters {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid var(--sub-accent);
+    }
+    .btn-sub {
+      background: #ffffff;
+      color: #1e293b;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all 0.15s ease;
+    }
+    .btn-sub:hover, .btn-sub.active {
+      background: var(--sub-accent);
+      color: #ffffff;
+      border-color: var(--sub-accent);
+    }
+
     #reader-content {
       font-size: 1.15rem;
       color: #1e293b;
+      margin-top: 24px;
     }
     #reader-content img {
       max-width: 100%;
@@ -90,56 +118,139 @@
 <div class="container">
   <header>
     <h1>Kulturfag 7. Klasse: Grundbog</h1>
-    <div class="nav-links">
-      <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708')">Balladen med svenskerne</button>
-      <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709')">Nye tanker & videnskab</button>
-      <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710')">Kampen om Europa</button>
-      <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711')">Revolutioner</button>
-      <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712')">Napoleon</button>
-      <button class="btn" onclick="hentKapitel(this, 'https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713')">Danmark & Napoleon</button>
+    
+    <!-- 1. Hovedtemaer -->
+    <div class="nav-themes" id="theme-buttons"></div>
+    
+    <!-- 2. Underkapitler for det valgte tema -->
+    <div class="nav-subchapters" id="subchapter-buttons">
+      <span style="font-size: 0.85rem; color: #64748b; margin-right: 8px;">Kapitler:</span>
     </div>
   </header>
 
   <main id="reader-content">
-    <div class="status-msg">Vælg et kapitel ovenfor for at indlæse teksten i fuld skærmvisning...</div>
+    <div class="status-msg">Vælg et emne ovenfor for at åbne kapitlerne...</div>
   </main>
 </div>
 
 <script>
-  async function hentKapitel(btn, targetUrl) {
-    const readerDiv = document.getElementById('reader-content');
-    
-    if (btn) {
-      document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+  // Komplet kapitelstruktur for 7. klasse
+  const bogStruktur = [
+    {
+      titel: "Balladen med svenskerne",
+      kapitler: [
+        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708" },
+        { navn: "Slaget i Køge Bugt", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708/1714" },
+        { navn: "Niels Juel & Tordenskjold", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708/1715" },
+        { navn: "Svenskekrigene", url: "https://historie.meloni.dk/lange-linjer_7-klasse_balladen-med-svenskerne/1708/1716" }
+      ]
+    },
+    {
+      titel: "Nye tanker & videnskab",
+      kapitler: [
+        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709" },
+        { navn: "Oplysningstiden", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709/1717" },
+        { navn: "Videnskab & Opdagelser", url: "https://historie.meloni.dk/lange-linjer_7-klasse_nye-tanker-og-videnskaberne/1709/1718" }
+      ]
+    },
+    {
+      titel: "Kampen om Europa",
+      kapitler: [
+        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710" },
+        { navn: "Europas magtbalance", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710/1719" },
+        { navn: "Alliancer & Krige", url: "https://historie.meloni.dk/lange-linjer_7-klasse_kampen-om-europa/1710/1720" }
+      ]
+    },
+    {
+      titel: "Revolutioner",
+      kapitler: [
+        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711" },
+        { navn: "Den Franske Revolution", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711/1721" },
+        { navn: "Menneskerettigheder", url: "https://historie.meloni.dk/lange-linjer_7-klasse_revolutioner/1711/1722" }
+      ]
+    },
+    {
+      titel: "Napoleon",
+      kapitler: [
+        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712" },
+        { navn: "Fra general til kejser", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712/1723" },
+        { navn: "Slaget ved Waterloo", url: "https://historie.meloni.dk/lange-linjer_7-klasse_napoleon/1712/1724" }
+      ]
+    },
+    {
+      titel: "Danmark & Napoleon",
+      kapitler: [
+        { navn: "Introduktion", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713" },
+        { navn: "Slaget på Reden (1801)", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713/1725" },
+        { navn: "Københavns Bombardement (1807)", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713/1726" },
+        { navn: "Statsbankerot & Tabet af Norge (1814)", url: "https://historie.meloni.dk/lange-linjer_7-klasse_danmark-og-napoleon/1713/1727" }
+      ]
     }
+  ];
 
+  // Opbyg Hovedtema-knapper
+  const themeContainer = document.getElementById('theme-buttons');
+  bogStruktur.forEach((tema, index) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-theme';
+    btn.innerText = tema.titel;
+    btn.onclick = () => vaelgTema(index, btn);
+    themeContainer.appendChild(btn);
+  });
+
+  function vaelgTema(temaIndex, temaBtn) {
+    document.querySelectorAll('.btn-theme').forEach(b => b.classList.remove('active'));
+    if (temaBtn) temaBtn.classList.add('active');
+
+    const subContainer = document.getElementById('subchapter-buttons');
+    subContainer.innerHTML = '<span style="font-size: 0.85rem; color: #64748b; margin-right: 8px;">Kapitler:</span>';
+
+    const tema = bogStruktur[temaIndex];
+    tema.kapitler.forEach((kapitel, kIndex) => {
+      const subBtn = document.createElement('button');
+      subBtn.className = 'btn-sub';
+      subBtn.innerText = kapitel.navn;
+      subBtn.onclick = () => {
+        document.querySelectorAll('.btn-sub').forEach(b => b.classList.remove('active'));
+        subBtn.classList.add('active');
+        hentKapitelTekst(kapitel.url);
+      };
+      subContainer.appendChild(subBtn);
+      
+      // Åbn første kapitel automatisk
+      if (kIndex === 0) {
+        subBtn.classList.add('active');
+        hentKapitelTekst(kapitel.url);
+      }
+    });
+  }
+
+  async function hentKapitelTekst(targetUrl) {
+    const readerDiv = document.getElementById('reader-content');
     readerDiv.innerHTML = '<div class="status-msg">Henter og klargør læsetilstand...</div>';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
       const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-      if (!res.ok) throw new Error('Kunne ikke hente siden');
+      if (!res.ok) throw new Error('Kunne ikke nå serveren');
       const htmlText = await res.text();
       
       const parser = new DOMParser();
       const doc = parser.parseFromString(htmlText, 'text/html');
 
-      // Gør alle billed-adresser absolutte
+      // Gør alle billeder absolutte
       doc.querySelectorAll('img').forEach(img => {
         const src = img.getAttribute('src');
-        if (src && !src.startsWith('http://') && !src.startsWith('https://')) {
+        if (src && !src.startsWith('http')) {
           img.src = 'https://historie.meloni.dk/' + src.replace(/^\//, '');
         }
       });
 
-      // Fjern forstyrrende elementer
+      // Fjern unødvendige portalelementer
       doc.querySelectorAll('header, footer, nav, script, style, noscript, .menu, #menu, .footer').forEach(el => el.remove());
 
-      // Hent hovedindholdet
       let mainContent = doc.querySelector('#content, .content, main, article, #main, .main') || doc.body;
 
-      // Rens HTML
       const cleanHTML = DOMPurify.sanitize(mainContent.innerHTML, {
         ADD_TAGS: ['img', 'a'],
         ADD_ATTR: ['src', 'alt', 'title', 'href']
@@ -147,7 +258,7 @@
 
       readerDiv.innerHTML = cleanHTML;
 
-      // Gør alle links i teksten klikbare direkte inde i læseren
+      // Kapr interne links
       readerDiv.querySelectorAll('a').forEach(link => {
         let href = link.getAttribute('href');
         if (href && !href.startsWith('javascript:')) {
@@ -157,7 +268,7 @@
           link.href = '#';
           link.onclick = (e) => {
             e.preventDefault();
-            hentKapitel(null, href);
+            hentKapitelTekst(href);
           };
         }
       });
@@ -165,11 +276,14 @@
     } catch (error) {
       readerDiv.innerHTML = `
         <div class="status-msg" style="color: #b91c1c; background: #fee2e2;">
-          <strong>Fejl under indlæsning:</strong> ${error.message}
+          <strong>Fejl:</strong> ${error.message}
         </div>
       `;
     }
   }
+
+  // Start ved første emne
+  vaelgTema(0, themeContainer.children[0]);
 </script>
 
 </body>
